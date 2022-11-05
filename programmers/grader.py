@@ -1,21 +1,30 @@
 import solution
 from random import randint
 
-def generate_input():
-    info = ["java backend junior pizza 150","python frontend senior chicken 210","python frontend senior chicken 150","cpp backend senior pizza 260","java backend junior chicken 80","python backend senior chicken 50"]
-    query = ["java and backend and junior and pizza 100","python and frontend and senior and chicken 200","cpp and - and senior and pizza 250","- and backend and senior and - 150","- and - and - and chicken 100","- and - and - and - 150"]
-    
-    info = info * 8333
-    query = query * 16666
-
-    return info, query
+def answer():
+    digits = ['1', '2', '4']
+    num = ''
+    for i in range(18):
+        num += digits[randint(0, 2)]
+    return num
 
 
-# res = solution.solution(["R", "R"])
-print("Generating inputs... ", end="", flush=True)
-genereted_input = generate_input()
-print("Done")
-print("Running...", flush=True)
-res = solution.solution(*genereted_input)
+def calc_input(num: str):
+    n = 0
+    for i, d in enumerate(num):
+        exp = len(num) - 1 - i
+        dig = int(d) if int(d) < 4 else 3
+        n += dig * (3 ** exp)
+    return n
 
-print(res)
+print(solution.solution(7))
+print(solution.solution(10))
+
+for i in range(1000000):
+    ans = answer()
+    inp = calc_input(ans)
+    out = solution.solution(inp)
+    if ans != out:
+        print(ans, inp)
+        print(out)
+        break
