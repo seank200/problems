@@ -94,7 +94,7 @@ def move(marble, dr, other_marble):
     new_marble = [nr, nc]
     if is_at(new_marble, other_marble):
         new_marble = move_back_one(new_marble, dr)
-    return nr, nc
+    return new_marble
 
 def move_back_one(marble, dr):
     return [marble[0] - DR_ROW[dr], marble[1] - DR_COL[dr]]
@@ -104,24 +104,32 @@ def is_at(a, b):
 
 def is_in_hole(marble):
     return marble[0] == hole[0] and marble[1] == hole[1]
-        
-def tilt(blue, red, dr):
-    if blue[0] == red[0]:
-        if (dr == 'l' and blue[1] > red[1]) or\
-            (dr == 'r' and blue[1] < red[1]):
-            new_red = move(red, dr, blue)
-            new_blue = move(blue, dr, new_red)
-        elif (dr == 'l' and blue[1] < red[1]) or\
-            (dr == 'r' and blue[1] > red[1]):
-            new_blue = move(blue, dr, red)
-            new_red = move(red, dr, new_blue)
-    elif blue[1] == red[1]:
-        if (dr == 'l')
-        
-            
 
-    new_blue = move(blue, dr)
-    new_red  = move(red,  dr)
+def is_in_way(marble, other_marble, dr):
+    if marble[0] == other_marble[0]:
+        if dr == 'l' and marble[1] < other_marble[1]:
+            return True
+        if dr == 'r' and marble[1] > other_marble[1]:
+            return True
+    if marble[1] == other_marble[1]:
+        if dr == 'u' and marble[0] < other_marble[0]:
+            return True
+        if dr == 'd' and marble[0] > other_marble[0]:
+            return True
+    return False
+
+
+def tilt(blue, red, dr):
+    new_blue = blue
+    new_red = red
+
+    if is_in_way(blue, red, dr):
+        new_blue = move(blue, dr, red)
+        new_red = move(red, dr, new_blue)
+    else:
+        new_red = move(red, dr, blue)
+        new_blue = move(blue, dr, new_red)
+    
     moved = not(is_at(blue, new_blue) and is_at(red, new_red))
 
     return moved, new_blue, new_red
@@ -134,8 +142,7 @@ def solve(blue, red, cnt, last_dr = ''):
         if dr != DR_OPP[last_dr]:
             moved, new_blue, new_red = tilt(blue, red, dr)
             if moved:
-                print("At", cnt, "going", dr)
-                debug(new_blue, new_red)
+                # debug(new_blue, new_red)
                 position = tuple([*new_blue, *new_red])
                 if position not in history:
                     if not is_in_hole(new_blue):
@@ -157,8 +164,9 @@ def debug(blue, red):
             elif is_at(red, (ri, ci)):
                 print('r', end=" ")
             else:
-                print(val, end=" ")
+                print(val if val in ['.', '#'] else '.', end=" ")
         print()
+    print(blue, red)
     print()
 
 
