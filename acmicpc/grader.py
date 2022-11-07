@@ -47,6 +47,8 @@ class SolutionResult:
 
         # Result
 
+        s += self.testcase_name + ': '
+
         if self.success:
             s += 'CORRECT' if self.checked and self.correct else 'NO ERRORS'
             s += f' ({self.exec_time:.4f} s)'
@@ -81,7 +83,8 @@ def recursive_listdir(filenames: Set[str], path: str):
         if os.path.isdir(p):
             recursive_listdir(filenames, os.path.join(path, p))
         else:
-            filenames.add(os.path.join(path, p))
+            if os.path.splitext(p)[1] not in ['.out', '.diff']:
+                filenames.add(os.path.join(path, p))
 
 
 # ##### FUNCTIONS #####
@@ -258,9 +261,9 @@ def run_solution(
         output_filepath += '.out'
 
     # Resolve the name of the current testcase
-    testcase_name = 'testcase_'
+    testcase_name = ''
     if testcase_count >= 0:
-        testcase_name += f"{testcase_count}_"
+        testcase_name += f"[{testcase_count}] "
     if input_filepath:
         testcase_name += f"{os.path.basename(input_filepath)}_"
     if not input_filepath and answer_filepath:
@@ -340,6 +343,8 @@ def run_solution_module(
 )->SolutionResult:
     raise NotImplementedError
 
+def get_directory(p):
+    return p[:-1*len(os.path.basename(p)) - 1]
 
 # ##### MAIN #####
 def main():
@@ -347,6 +352,11 @@ def main():
     solution_filename: str     = get_solution_filename(args.problem, args.solution_path, args.solution_type)
     input_filenames:  Set[str] = get_input_filenames(args.problem, args.input_path)
     answer_filenames: Set[str] = get_answer_filenames(args.problem, args.answer_path)
+
+    answer_directory = ''
+    for ansswer_filename in answer_filenames:
+        answer_directory = get_directory(ansswer_filename)
+        break
 
     num_testcases = len(input_filenames) 
     print(f"Found {num_testcases} test case{'s' if num_testcases > 1 else ''}.")
@@ -356,7 +366,10 @@ def main():
         print(f"Running ({i + 1}/{num_testcases})...")
 
         # Look for answer file
-        answer_filename = os.path.splitext(input_filepath)[0] + '.ans'
+        answer_filename = os.path.splitext(os.path.basename(input_filepath))[0] + '.ans'
+        if answer_directory:
+            answer_filename = os.path.join(answer_directory, answer_filename)
+        
         if answer_filename in answer_filenames:
             answer_filenames.remove(answer_filename)
         else:
