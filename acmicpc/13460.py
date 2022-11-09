@@ -4,7 +4,6 @@ LEFT  =  0, -1
 RIGHT =  0,  1
 DIRECTION_OPPOSITE = { LEFT: RIGHT, RIGHT: LEFT, UP: DOWN, DOWN: UP, None: None }
 DIRECTION_NAME = { LEFT: 'LEFT', RIGHT: 'RIGHT', UP: 'UP', DOWN: 'DOWN' }
-# history = set()
 history = dict()
 
 def parse_input():
@@ -115,7 +114,6 @@ def move(marble, direction, marbles, board, indexed_board):
         nmr = vert_walls[nmc][board_index[nmr][nmc][1]][0]
     other_marble = 'B' if marble == 'R' else 'R'
     while (is_at((nmr, nmc), marbles[other_marble]) and board[nmr][nmc] != 'O') or board[nmr][nmc] == '#':
-        # print("MOVING BACK", marble, DIRECTION_NAME[direction])
         nmr, nmc = move_back_one((nmr, nmc), direction)
     marbles[marble][0] = nmr
     marbles[marble][1] = nmc
