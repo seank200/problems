@@ -1,171 +1,109 @@
-UP    = -1,  0
-DOWN  =  1,  0
-LEFT  =  0, -1
-RIGHT =  0,  1
-DIRECTION_OPPOSITE = { LEFT: RIGHT, RIGHT: LEFT, UP: DOWN, DOWN: UP, None: None }
-DIRECTION_NAME = { LEFT: 'LEFT', RIGHT: 'RIGHT', UP: 'UP', DOWN: 'DOWN' }
-history = dict()
+import sys
+input = sys.stdin.readline
+N, M = [int(x) for x in input().split(" ")]
+board = []
+red = None
+blue = None
+dx = { 'l': -1, 'r': 1, 'u': 0, 'd': 0 }
+dy = { 'l': 0, 'r': 0, 'u': -1, 'd': 1 }
 
-def parse_input():
-    N, M = [int(x) for x in input().split()]
-    board = []
-    marbles = { 'R': [-1, -1], 'B': [-1, -1] }
-    for r in range(N):
-        row = input()
-        board.append([])
-        for c in range(M):
-            if row[c] in ['R', 'B']:
-                marbles[row[c]] = [r, c]
-                board[r].append('.')
-            else:
-                board[r].append(row[c])
-    return board, marbles
+for i in range(N):
+    board.append([])
+    row = input()
+    for j in range(M):
+        if row[j] == 'R':
+            red = [i, j]
+            board[i].append('.')
+        elif row[j] == 'B':
+            blue = [i, j]
+            board[i].append('.')
+        else:
+            board[i].append(row[j])
 
-def index_board(board):
-    board_index = []
-    N = len(board)
-    M = len(board[0])
 
-    # Index horizontally
-    hori_walls = []
-    for r, row in enumerate(board):
-        row_walls = []
-        board_index.append([])
-        for c, val in enumerate(row):
-            board_index[r].append([-1, -1])
-            if val == '#':
-                if c == 0 or row[c-1] != '#':
-                    # Start of wall
-                    row_walls.append([c, -1])
-                if c == M-1 or row[c+1] != '#':
-                    # End of wall
-                    row_walls[-1][1] = c
-            elif val == 'O':
-                row_walls.append([c, c])
-            else:
-                board_index[r][c][0] = len(row_walls)
-        hori_walls.append(row_walls)
-    
-    # Index vertically
-    vert_walls = []
-    for c in range(M):
-        col_walls = []
-        for r in range(N):
-            if board[r][c] == '#':
-                if r == 0 or board[r-1][c] != '#':
-                    # Start of wall
-                    col_walls.append([r, -1])
-                if r == N - 1 or board[r+1][c] != '#':
-                    # End of wall
-                    col_walls[-1][1] = r
-            elif board[r][c] == 'O':
-                col_walls.append([r, r])
-            else:
-                board_index[r][c][1] = len(col_walls)
-        vert_walls.append(col_walls)
-    return board_index, hori_walls, vert_walls
+def can_move(pos):
+    return board[pos[0]][pos[1]] not in ('#', 'O')
 
-def already_visited(marbles, cnt):
-    position = tuple([*marbles['R'], *marbles['B']])
-    if position in history:
-        return history[position] <= cnt
-    return False
 
-def add_history(marbles, cnt):
-    global history
-    history[tuple([*marbles['R'], *marbles['B']])] = cnt
+def is_hole(pos):
+    return board[pos[0]][pos[1]] == 'O'
 
-def is_at(a, b):
+
+def is_same(a, b):
     return a[0] == b[0] and a[1] == b[1]
 
-def move_back_one(m, direction):
-    return m[0] - direction[0], m[1] - direction[1]
 
-def is_in_way(marble, direction, marbles):
-    other_marble = 'B' if marble == 'R' else 'R'
-    if marbles[marble][0] == marbles[other_marble][0]:
-        if direction == LEFT and marbles[marble][1] < marbles[other_marble][1]:
-            return True
-        if direction == RIGHT and marbles[marble][1] > marbles[other_marble][1]:
-            return True
-    if marbles[marble][1] == marbles[other_marble][1]:
-        if direction == UP and marbles[marble][0] < marbles[other_marble][0]:
-            return True
-        if direction == DOWN and marbles[marble][0] > marbles[other_marble][0]:
-            return True
-    return False
+def move(marble, d):
+    marble[0] += dy[d]
+    marble[1] += dx[d]
 
-def is_in_hole(marble, marbles, board):
-    r, c = marbles[marble]
-    return board[r][c] == 'O'
 
-def move(marble, direction, marbles, board, indexed_board):
-    board_index, hori_walls, vert_walls = indexed_board
-    mr , mc  = marbles[marble]
-    nmr, nmc = marbles[marble]
+def move_back(marble, d):
+    marble[0] -= dy[d]
+    marble[1] -= dx[d]
 
-    if direction == LEFT:
-        nmc = hori_walls[nmr][board_index[nmr][nmc][0] - 1][1]
-    elif direction == RIGHT:
-        nmc = hori_walls[nmr][board_index[nmr][nmc][0]][0]
-    elif direction == UP:
-        nmr = vert_walls[nmc][board_index[nmr][nmc][1] - 1][1]
-    else:
-        nmr = vert_walls[nmc][board_index[nmr][nmc][1]][0]
-    other_marble = 'B' if marble == 'R' else 'R'
-    while (is_at((nmr, nmc), marbles[other_marble]) and board[nmr][nmc] != 'O') or board[nmr][nmc] == '#':
-        nmr, nmc = move_back_one((nmr, nmc), direction)
-    marbles[marble][0] = nmr
-    marbles[marble][1] = nmc
-    return not is_at((mr, mc), marbles[marble]) # Moved?
 
-def solve(board, marbles, indexed_board, cnt = 0, last_direction = None):
-    original_marbles = {'R': marbles['R'][:], 'B': marbles['B'][:] }
-
-    min_cnt = None
-    for direction in UP, DOWN, LEFT, RIGHT:
-        if direction != DIRECTION_OPPOSITE[last_direction]:
-            marbles['R'][0], marbles['R'][1] = original_marbles['R']
-            marbles['B'][0], marbles['B'][1] = original_marbles['B']
-            if is_in_way('R', direction, marbles):
-                moved_r = move('R', direction, marbles, board, indexed_board)
-                moved_b = move('B', direction, marbles, board, indexed_board)
-            else:
-                moved_b = move('B', direction, marbles, board, indexed_board)
-                moved_r = move('R', direction, marbles, board, indexed_board)
-            moved = moved_r or moved_b
-            if moved:
-                if not already_visited(marbles, cnt + 1):
-                    add_history(marbles, cnt + 1)
-                    if not is_in_hole('B', marbles, board):
-                        if is_in_hole('R', marbles, board):
-                            if min_cnt == None or cnt + 1 < min_cnt:
-                                min_cnt = cnt + 1
-                        else:
-                            sol = solve(board, marbles, indexed_board, cnt + 1, direction)
-                            if sol and (min_cnt == None or sol < min_cnt):
-                                min_cnt = sol
-    marbles['R'][0], marbles['R'][1] = original_marbles['R']
-    marbles['B'][0], marbles['B'][1] = original_marbles['B']
+def bfs():
+    if cnt > 10:
+        return -1
     
-    return min_cnt
+    min_moves = -1
+    d_history = []
+    marble_history = [(*red, *blue)]
+    visited = dict()
+    
+    while len(marble_history):
+        for d in 'l', 'r', 'u', 'd':
+            if len(d_history) > 0 and d == d_history[-1]:
+                continue
 
-def debug(board, marbles):
-    for r, row in enumerate(board):
-        for c, val in enumerate(row):
-            if is_at((r, c), marbles['R']):
-                print('R', end=" ")
-            elif is_at((r, c), marbles['B']):
-                print('B', end=" ")
-            else:
-                print(val, end=" ")
-        print()
-    print()
+            moved_r = 0
+            moved_b = 0
+
+            while can_move(red):
+                move(red, d)
+                moved_r += 1
+            if is_wall(red):
+                move_back(red, d)
+                moved_r -= 1
+
+            while can_move(blue):
+                move(blue, d)
+                moved_b += 1
+            if is_wall(blue);
+                move_back(blue, d)
+                moved_b -= 1
             
+            if moved_r > 0 or moved_b > 0:
+                if is_hole(red):
+                    if is_hole(blue):
+                        # both marbles in hole
+                        continue
+                    else:
+                        # red marble in hole!
+                        moves = len(d_history)
+                        if moves < min_moves:
+                            min_moves = moves
+                        continue
+                
+                if is_hole(blue):
+                    continue
 
-def main():
-    board, marbles = parse_input()
-    sol = solve(board, marbles, index_board(board))
-    print(-1 if sol == None else sol)
+                if is_same(red, blue):
+                if moved_r > moved_b:
+                        move_back(red, d)
+                        moved_r -= 1
+                    else:
+                        move_back(blue, d)
+                        moved_b -= 1
 
-main()
+                if moved_r > 0 or moved_b > 0:
+                    last_moves = visited.get((*red, *blue), 11):
+                    moves = len(d_history)
+                    
+                    if moves < last_moves:
+                        visited[(*red, *blue)] = moves
+                        d_history.append(d)
+                        marble_history.append((*red, *blue))
+
+
