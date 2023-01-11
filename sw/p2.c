@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <string.h>
 
 
-#define BUF_SIZE 12
+#define BUF_SIZE 100002
 
 int ctoi(char c)
 {
@@ -32,7 +33,6 @@ int main()
         }
         
         scanf("%s %d %d", N, &x, &y);
-        // printf("%s %s %d %d\n", N, M, x, y);
         int n, j = 0, fail = 0, fill = 0;
         while (!fail && (N[j] != '\0'))
         {
@@ -44,12 +44,31 @@ int main()
 
             if (n > ctoi(M[j])) fill = 1;
             j++;
-            // printf("%d ", j);
         }
-        // printf("\n");
         printf("#%d ", t + 1);
-        if (fail || M[0] == '0') printf("-1");
-        else printf("%s", M);
+
+        if (fail) {
+            int len = strlen(&N[0]);
+            if (len <= 1)
+            {
+                printf("-1");
+            }
+            else
+            {
+                j = 0;
+                for (j = 0; j < len - 1; j++)
+                {
+                    M[j] = itoc(y);
+                }
+                M[j] = '\0';
+                printf("%s", M);
+            }
+        } else {
+            if (M[0] == '0')
+                printf("-1");
+            else
+                printf("%s", M);
+        }
         printf("\n");
     }
 
